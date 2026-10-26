@@ -26,13 +26,23 @@ versions `composer.json` allows.
 composer require --dev offset-smoker/pest-ratchets
 ```
 
+The project has to run its tests with Pest already. A new Laravel app
+ships with PHPUnit; switch it to Pest first, as
+[Pest's installation guide](https://pestphp.com/docs/installation)
+describes.
+
 Pest discovers the package as a plugin through `pestphp/pest-plugin`,
 which every Pest project already allows in `config.allow-plugins`. That is
 what adds the `--update-ratchets` and `--prune-ratchets` options.
 
 ## Usage
 
-Create a test file, for example `tests/Arch/RatchetsTest.php`:
+Create `tests/Feature/RatchetsTest.php`. The ratchets are tests, so the
+file has to sit in a directory one of `phpunit.xml`'s test suites loads; a
+Laravel app's suites load only `tests/Unit` and `tests/Feature`. To keep
+them in a directory of their own, such as `tests/Arch`, add
+`<testsuite name="Arch"><directory>tests/Arch</directory></testsuite>` to
+`phpunit.xml` first.
 
 ```php
 <?php
@@ -42,10 +52,10 @@ use OffsetSmoker\PestRatchets\Rules\NoDebugCalls;
 use OffsetSmoker\PestRatchets\Rules\NoDirectEnvCalls;
 use OffsetSmoker\PestRatchets\Rules\NoInterpolatedRawSql;
 
-ratchet(NoDirectEnvCalls::class)->in('app', 'routes')->baseline('tests/ratchets/env.json');
-ratchet(NoDebugCalls::class)->in('app', 'routes', 'database')->baseline('tests/ratchets/debug.json');
-ratchet(NoInterpolatedRawSql::class)->in('app')->baseline('tests/ratchets/raw-sql.json');
-ratchet(ModelsDeclareFillable::class)->in('app/Models')->baseline('tests/ratchets/fillable.json');
+ratchet(NoDirectEnvCalls::class)->in('app', 'routes')->baseline('tests/ratchets/env.json')->group('ratchets');
+ratchet(NoDebugCalls::class)->in('app', 'routes', 'database')->baseline('tests/ratchets/debug.json')->group('ratchets');
+ratchet(NoInterpolatedRawSql::class)->in('app')->baseline('tests/ratchets/raw-sql.json')->group('ratchets');
+ratchet(ModelsDeclareFillable::class)->in('app/Models')->baseline('tests/ratchets/fillable.json')->group('ratchets');
 ```
 
 `ratchet()` works like Pest's `arch()`: each call defines one test, named
@@ -58,6 +68,15 @@ Then record today's offenders, once, and commit the baselines:
 vendor/bin/pest --update-ratchets
 git add tests/ratchets
 ```
+
+Check that the ratchets ran:
+
+```bash
+vendor/bin/pest --group=ratchets
+```
+
+It should report `4 passed`. If it reports no tests, the file is outside
+every test suite in `phpunit.xml`, and nothing was checked.
 
 From then on `vendor/bin/pest` runs the ratchets with everything else.
 
