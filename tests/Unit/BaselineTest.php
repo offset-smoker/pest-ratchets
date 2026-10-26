@@ -42,6 +42,16 @@ it('reads an empty baseline', function (): void {
     expect(Baseline::fromJson(baselineJson([]), NoDebugCalls::class)->entries)->toBe([]);
 });
 
+it('reads a hand-edited baseline whose keys are in another order', function (): void {
+    $json = json_encode([
+        'offenders' => [['count' => 2, 'message' => 'm', 'file' => 'a.php']],
+        'rule' => NoDebugCalls::class,
+    ], JSON_THROW_ON_ERROR);
+
+    expect(array_values(Baseline::fromJson($json, NoDebugCalls::class)->entries))
+        ->toBe([['file' => 'a.php', 'message' => 'm', 'count' => 2]]);
+});
+
 it('never adds or raises entries when pruned', function (): void {
     $baseline = Baseline::fromJson(baselineJson([
         ['file' => 'a.php', 'message' => 'm', 'count' => 3],

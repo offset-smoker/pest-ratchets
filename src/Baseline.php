@@ -77,7 +77,7 @@ final readonly class Baseline
             throw new RatchetException("{$source} is not valid JSON: {$exception->getMessage()}", previous: $exception);
         }
 
-        if (! is_array($data) || array_keys($data) !== ['rule', 'offenders']) {
+        if (! is_array($data) || ! self::hasExactlyKeys($data, ['rule', 'offenders'])) {
             throw new RatchetException("{$source} must be a JSON object with exactly the keys \"rule\" and \"offenders\".");
         }
 
@@ -96,7 +96,7 @@ final readonly class Baseline
         foreach ($data['offenders'] as $index => $entry) {
             $where = "{$source}: offenders[{$index}]";
 
-            if (! is_array($entry) || array_keys($entry) !== ['file', 'message', 'count']) {
+            if (! is_array($entry) || ! self::hasExactlyKeys($entry, ['file', 'message', 'count'])) {
                 throw new RatchetException("{$where} must be an object with exactly the keys \"file\", \"message\" and \"count\".");
             }
 
@@ -198,6 +198,21 @@ final readonly class Baseline
         }
 
         return true;
+    }
+
+    /**
+     * Whether an array has exactly these keys, in any order.
+     *
+     * @param  array<mixed>  $data
+     * @param  list<string>  $keys
+     */
+    private static function hasExactlyKeys(array $data, array $keys): bool
+    {
+        $found = array_map(strval(...), array_keys($data));
+        sort($found);
+        sort($keys);
+
+        return $found === $keys;
     }
 
     private static function isSafeRelativePath(string $path): bool
