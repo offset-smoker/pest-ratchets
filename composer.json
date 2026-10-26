@@ -1,0 +1,74 @@
+{
+    "name": "offset-smoker/pest-ratchets",
+    "description": "Architecture ratchets for Pest: rules that find offenders with a real PHP parser, and a committed baseline that may only shrink.",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "pest",
+        "pest-plugin",
+        "architecture",
+        "ratchet",
+        "baseline",
+        "static-analysis",
+        "php-parser",
+        "laravel",
+        "testing"
+    ],
+    "authors": [
+        {
+            "name": "Brandon Wagner",
+            "email": "b@wagner.codes"
+        }
+    ],
+    "homepage": "https://github.com/offset-smoker/pest-ratchets",
+    "support": {
+        "issues": "https://github.com/offset-smoker/pest-ratchets/issues",
+        "source": "https://github.com/offset-smoker/pest-ratchets",
+        "security": "https://github.com/offset-smoker/pest-ratchets/security/policy"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-json": "*",
+        "nikic/php-parser": "^5.4",
+        "pestphp/pest": "^4.0 || ^5.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.24",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-strict-rules": "^2.0"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "OffsetSmoker\\PestRatchets\\": "src/"
+        },
+        "files": [
+            "src/Functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OffsetSmoker\\PestRatchets\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "pest": {
+            "plugins": [
+                "OffsetSmoker\\PestRatchets\\Plugin"
+            ]
+        }
+    },
+    "scripts": {
+        "analyse": "phpstan analyse --memory-limit=1G",
+        "format": "pint",
+        "lint": "pint --test",
+        "test": "pest"
+    }
+}
