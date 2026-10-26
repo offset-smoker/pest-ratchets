@@ -139,7 +139,11 @@ final class Ratchet
             Mode::Prune => $this->prune(),
         };
 
-        Assert::assertTrue($result->passed(), $result->report());
+        if (! $result->passed()) {
+            Assert::fail($result->report());
+        }
+
+        Assert::assertTrue($result->passed());
 
         return $result;
     }

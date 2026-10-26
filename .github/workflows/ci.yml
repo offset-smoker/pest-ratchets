@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  composer:
+    name: composer validate and audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+      - run: composer validate --strict
+      - uses: ramsey/composer-install@v3
+      - run: composer audit
+
+  quality:
+    name: PHP ${{ matrix.php }}, ${{ matrix.dependencies }} dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4']
+        dependencies: ['highest', 'lowest']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      # PHP 8.3 resolves to Pest 4 and PHP 8.4 to Pest 5.
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: ${{ matrix.dependencies }}
+
+      - name: Check code style
+        run: vendor/bin/pint --test
+
+      - name: Static analysis (PHPStan level max, no baseline)
+        run: |
+          vendor/bin/phpstan clear-result-cache
+          vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
+      - name: Tests
+        run: vendor/bin/pest --colors=never

@@ -122,3 +122,13 @@ it('prunes stale entries with --prune-ratchets, and still fails on new offenders
             'app/Services/Billing.php' => 1,
         ]);
 });
+
+it('passes --update-ratchets on to parallel workers', function (): void {
+    $project = temporaryProject();
+    writeFile("{$project}/app/Fresh.php", "<?php\n\nreturn env('FRESH');\n");
+
+    $run = runPest($project, ['--parallel', '--processes=2', '--update-ratchets']);
+
+    expect($run['exit'])->toBe(0)
+        ->and(baselineFiles($project))->toHaveKey('app/Fresh.php', 1);
+});
