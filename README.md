@@ -161,7 +161,8 @@ Everything is set on the ratchet itself:
 | `group(string ...$groups)` | (`ratchet()` only) Pest groups for the test, so `--group=ratchets` runs just these. |
 
 Misconfiguration is an error, not a pass. A path that does not exist, a
-path with no `.php` files in it, a path outside the root, a file PHP
+path with no `.php` files in it, a path outside the root, a file (a
+symlink, say) that resolves outside the root, a file PHP
 cannot parse, paths whose every file is excluded, a missing baseline file
 and a malformed baseline each stop the test with a message saying what is
 wrong. A ratchet that silently scanned nothing would be worse than none.

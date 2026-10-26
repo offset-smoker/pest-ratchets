@@ -15,7 +15,8 @@ you can, a small reproduction. You will get a reply within a week.
 ## Scope
 
 The package runs in your test suite. It reads the PHP files under the
-paths you configure and the baseline files you name, and it writes
+paths you configure, refusing any file (a symlink, say) that resolves
+outside the ratchet root, and the baseline files you name, and it writes
 baseline files only when you run Pest with `--update-ratchets` or
 `--prune-ratchets` (or set `PEST_RATCHETS`). It never executes the code it
 analyses, makes no network requests and logs nothing.

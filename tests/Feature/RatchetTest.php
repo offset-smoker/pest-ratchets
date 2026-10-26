@@ -250,6 +250,41 @@ it('rejects configuration that would check nothing or the wrong thing', function
     'a missing exclusion' => [fn (Ratchet $ratchet) => $ratchet->in('app')->exclude('app/Nope'), "Excluded path 'app/Nope' does not exist"],
 ]);
 
+it('refuses a symlinked file that leads outside the root, unless it is excluded', function (): void {
+    $project = temporaryProject();
+    $outside = temporaryProject();
+    symlink("{$outside}/app/Legacy/Old.php", "{$project}/app/Link.php");
+
+    expect(fn () => Ratchet::rule(NoDirectEnvCalls::class)->root($project)->in('app')->offenders())
+        ->toThrow(RatchetException::class, "File 'app/Link.php' resolves to {$outside}/app/Legacy/Old.php, outside the ratchet root");
+
+    expect(Ratchet::rule(NoDirectEnvCalls::class)->root($project)->in('app')->exclude('app/Link.php')->offenders())
+        ->toHaveCount(4);
+});
+
+it('follows a symlinked file that stays inside the root', function (): void {
+    $project = temporaryProject();
+    symlink("{$project}/app/Legacy/Old.php", "{$project}/app/Link.php");
+
+    $files = array_map(static fn ($offender): string => $offender->file, Ratchet::rule(NoDirectEnvCalls::class)->root($project)->in('app')->offenders());
+
+    expect($files)->toContain('app/Link.php')->toContain('app/Legacy/Old.php');
+
+    // Excluding the link excludes the link, not the file it points to.
+    $files = array_map(static fn ($offender): string => $offender->file, Ratchet::rule(NoDirectEnvCalls::class)->root($project)->in('app')->exclude('app/Link.php')->offenders());
+
+    expect($files)->not->toContain('app/Link.php')->toContain('app/Legacy/Old.php');
+});
+
+it('refuses a path that is a symlink leading outside the root', function (): void {
+    $project = temporaryProject();
+    $outside = temporaryProject();
+    symlink("{$outside}/app", "{$project}/linked");
+
+    expect(fn () => Ratchet::rule(NoDirectEnvCalls::class)->root($project)->in('linked')->offenders())
+        ->toThrow(RatchetException::class, "resolves to {$outside}/app/");
+});
+
 it('fails on a file PHP cannot parse rather than skipping it', function (): void {
     $project = temporaryProject();
     writeFile("{$project}/app/Broken.php", "<?php\n\nfunction (\n");

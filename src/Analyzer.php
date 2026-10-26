@@ -73,7 +73,7 @@ final readonly class Analyzer
                 $found[$relative] = true;
 
                 if (! $this->isExcluded($relative, $excluded)) {
-                    $files[$relative] = $absolute;
+                    $files[$relative] = $this->insideRoot($relative, $absolute);
                 }
             }
 
@@ -134,7 +134,9 @@ final readonly class Analyzer
 
     /**
      * Normalizes a configured path to one relative to the root, and checks
-     * that it exists inside the root.
+     * that it exists inside the root. A symlink keeps its own name, so
+     * excluding a link excludes the link and not what it points to; where
+     * it leads is checked for each file found (see insideRoot()).
      */
     private function relativePath(string $path, string $label): string
     {
@@ -148,7 +150,7 @@ final readonly class Analyzer
             ? $path
             : $this->root.'/'.$path;
 
-        $real = realpath($candidate);
+        $real = $this->location($candidate);
 
         if ($real === false) {
             throw new RatchetException("{$label} '{$path}' does not exist (looked for {$candidate}).");
@@ -165,6 +167,36 @@ final readonly class Analyzer
         }
 
         return substr($real, strlen($this->root) + 1);
+    }
+
+    /**
+     * The canonical path of a file or directory, or of a symlink's own
+     * location (not its target). False when it does not exist.
+     */
+    private function location(string $path): string|false
+    {
+        if (! is_link($path)) {
+            return realpath($path);
+        }
+
+        $directory = realpath(dirname($path));
+
+        return $directory === false || ! file_exists($path) ? false : $directory.'/'.basename($path);
+    }
+
+    /**
+     * Checks that a file found under a configured path, a symlink perhaps,
+     * still resolves to somewhere inside the root.
+     */
+    private function insideRoot(string $relative, string $absolute): string
+    {
+        $real = str_replace('\\', '/', (string) realpath($absolute));
+
+        if (! str_starts_with($real, $this->root.'/')) {
+            throw new RatchetException("File '{$relative}' resolves to {$real}, outside the ratchet root {$this->root}. Exclude it or remove the link.");
+        }
+
+        return $absolute;
     }
 
     private function absolute(string $relative): string
