@@ -162,9 +162,9 @@ Everything is set on the ratchet itself:
 
 Misconfiguration is an error, not a pass. A path that does not exist, a
 path with no `.php` files in it, a path outside the root, a file PHP
-cannot parse, a missing baseline file and a malformed baseline each stop
-the test with a message saying what is wrong. A ratchet that silently
-scanned nothing would be worse than none.
+cannot parse, paths whose every file is excluded, a missing baseline file
+and a malformed baseline each stop the test with a message saying what is
+wrong. A ratchet that silently scanned nothing would be worse than none.
 
 ## Testing
 
@@ -210,6 +210,10 @@ messages (which would mean regenerating baselines).
 - **Counts, not lines.** The baseline counts each message per file. If
   you fix one offender and add another of the same kind in the same file,
   the ratchet cannot tell, and it passes.
+- **`in('.')` scans everything**, `vendor/` included. Name the
+  directories you mean, or add `exclude('vendor')`.
+- **Not tested on Windows.** Paths are normalized to forward slashes, but
+  CI runs on Linux only.
 - **Pest's test impact analysis** (Pest 5's `--tia`) replays tests whose
   covered source has not changed. Ratchets read files rather than execute
   them, so run them without `--tia`, or in a separate full run in CI.

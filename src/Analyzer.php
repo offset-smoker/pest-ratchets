@@ -82,6 +82,10 @@ final readonly class Analyzer
             }
         }
 
+        if ($files === []) {
+            throw new RatchetException('Every .php file under the ratchet\'s paths is excluded, so it would check nothing.');
+        }
+
         ksort($files, SORT_STRING);
 
         return $files;

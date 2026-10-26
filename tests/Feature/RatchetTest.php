@@ -246,6 +246,7 @@ it('rejects configuration that would check nothing or the wrong thing', function
     'an empty path' => [fn (Ratchet $ratchet) => $ratchet->in(' '), 'must not be empty'],
     'a path without PHP' => [fn (Ratchet $ratchet) => $ratchet->in('resources'), "Path 'resources' holds no .php files"],
     'a path outside the root' => [fn (Ratchet $ratchet) => $ratchet->in('..'), 'is outside the ratchet root'],
+    'everything excluded' => [fn (Ratchet $ratchet) => $ratchet->in('app/Legacy')->exclude('app'), 'is excluded, so it would check nothing'],
     'a missing exclusion' => [fn (Ratchet $ratchet) => $ratchet->in('app')->exclude('app/Nope'), "Excluded path 'app/Nope' does not exist"],
 ]);
 
