@@ -18,7 +18,8 @@ The package runs in your test suite. It reads the PHP files under the
 paths you configure, refusing any file (a symlink, say) that resolves
 outside the ratchet root, and the baseline files you name, and it writes
 baseline files only when you run Pest with `--update-ratchets` or
-`--prune-ratchets` (or set `PEST_RATCHETS`). It never executes the code it
+`--prune-ratchets` (or set `PEST_RATCHETS`; `PEST_RATCHETS=update` is
+refused when the `CI` environment variable is set). It never executes the code it
 analyses, makes no network requests and logs nothing.
 
 Baseline files are validated when read: each entry's file must be a

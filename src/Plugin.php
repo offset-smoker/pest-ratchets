@@ -16,7 +16,9 @@ use Pest\Plugins\Parallel;
  *   --prune-ratchets   remove stale baseline entries, never adding any
  *
  * The PEST_RATCHETS environment variable (check, update or prune) does the
- * same when the command line is out of reach.
+ * same when the command line is out of reach, except that update is
+ * refused when the CI variable is set, so a leaked variable cannot quietly
+ * turn the gate off.
  */
 final class Plugin implements HandlesArguments
 {
@@ -79,7 +81,24 @@ final class Plugin implements HandlesArguments
             return Mode::Check;
         }
 
-        return Mode::parse($environment);
+        $mode = Mode::parse($environment);
+
+        if ($mode === Mode::Update && self::onCi()) {
+            throw new RatchetException('PEST_RATCHETS=update is refused because CI is set: it would write every new offender to the baselines and pass. To update a baseline on CI on purpose, run vendor/bin/pest --update-ratchets.');
+        }
+
+        return $mode;
+    }
+
+    /**
+     * Whether the CI environment variable, which GitHub Actions, GitLab CI
+     * and most other CI services set, is set to anything but false or 0.
+     */
+    private static function onCi(): bool
+    {
+        $ci = getenv('CI');
+
+        return is_string($ci) && ! in_array(strtolower(trim($ci)), ['', '0', 'false'], true);
     }
 
     /**

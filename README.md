@@ -96,7 +96,11 @@ Run vendor/bin/pest --prune-ratchets to remove stale entries without adding any.
 
 Both work with `--filter` and `--parallel`. Where you cannot add options
 to the Pest command, set `PEST_RATCHETS=prune` or `PEST_RATCHETS=update`
-instead. The baseline is only rewritten when its content changes.
+instead. `PEST_RATCHETS=update` is refused when the `CI` environment
+variable is set (to anything but `false` or `0`), so a variable that leaks
+into CI cannot turn every ratchet green; on CI, ask for an update by name
+with `--update-ratchets`. The baseline is only rewritten when its content
+changes.
 
 The baseline is plain, sorted JSON, so a change to it reads clearly in
 review:
@@ -227,7 +231,8 @@ messages (which would mean regenerating baselines).
 
 See [SECURITY.md](SECURITY.md). The package reads PHP files and the
 baseline JSON, and writes only baseline files, and only when asked to
-with `--update-ratchets` or `--prune-ratchets`. Baseline entries are
+with `--update-ratchets`, `--prune-ratchets` or `PEST_RATCHETS` (which
+refuses `update` on CI). Baseline entries are
 validated: a file path must be relative, with no `..` segments.
 
 ## How this was built

@@ -38,8 +38,9 @@ function runPest(string $project, array $arguments = [], array $environment = []
         ratchet(NoDirectEnvCalls::class)->root(dirname(__DIR__, 2))->in('app', 'config')->baseline('tests/ratchets/env.json');
         PHP);
 
-    $environment = [...getenv(), 'PEST_RATCHETS' => '', ...$environment];
-    unset($environment['PARATEST']);
+    $inherited = [...getenv(), 'PEST_RATCHETS' => ''];
+    unset($inherited['PARATEST'], $inherited['CI']);
+    $environment = [...$inherited, ...$environment];
 
     $process = proc_open(
         [PHP_BINARY, "{$root}/vendor/bin/pest", '--colors=never', "--configuration={$project}/phpunit.xml", ...$arguments],
@@ -106,6 +107,18 @@ it('regenerates the baseline when PEST_RATCHETS=update', function (): void {
 
     expect(runPest($project, [], ['PEST_RATCHETS' => 'update'])['exit'])->toBe(0)
         ->and(baselineFiles($project))->toHaveKey('app/Fresh.php', 1);
+});
+
+it('fails the run instead of updating when PEST_RATCHETS=update leaks into CI', function (): void {
+    $project = temporaryProject();
+    writeFile("{$project}/app/Fresh.php", "<?php\n\nreturn env('FRESH');\n");
+
+    $run = runPest($project, [], ['PEST_RATCHETS' => 'update', 'CI' => 'true']);
+
+    // 2: the ratchet errors rather than fails, as any misconfiguration does.
+    expect($run['exit'])->toBe(2)
+        ->and($run['output'])->toContain('PEST_RATCHETS=update is refused because CI is set')
+        ->and(baselineFiles($project))->not->toHaveKey('app/Fresh.php');
 });
 
 it('prunes stale entries with --prune-ratchets, and still fails on new offenders', function (): void {

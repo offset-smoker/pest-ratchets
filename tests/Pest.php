@@ -7,15 +7,19 @@ use OffsetSmoker\PestRatchets\Ratchet;
 use OffsetSmoker\PestRatchets\Rule;
 
 /*
- * Every test starts in check mode, whatever the environment says, and
- * leaves no temporary project behind.
+ * Every test starts in check mode and off CI, whatever the environment
+ * says, and leaves no temporary project behind.
  */
 pest()->beforeEach(function (): void {
+    $GLOBALS['pest-ratchets-ci'] = getenv('CI');
     Plugin::reset();
     putenv(Plugin::ENVIRONMENT_VARIABLE);
+    putenv('CI');
 })->afterEach(function (): void {
     Plugin::reset();
     putenv(Plugin::ENVIRONMENT_VARIABLE);
+    $ci = $GLOBALS['pest-ratchets-ci'] ?? false;
+    putenv(is_string($ci) ? "CI={$ci}" : 'CI');
     removeTemporaryProjects();
 });
 

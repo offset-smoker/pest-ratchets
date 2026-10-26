@@ -53,3 +53,30 @@ it('rejects an unknown mode', function (): void {
 
     expect(fn () => Plugin::mode())->toThrow(RatchetException::class, "Unknown ratchet mode 'grow'");
 });
+
+it('refuses PEST_RATCHETS=update on CI, where it would let new offenders pass', function (string $ci): void {
+    putenv('PEST_RATCHETS=update');
+    putenv("CI={$ci}");
+
+    expect(fn () => Plugin::mode())->toThrow(RatchetException::class, 'PEST_RATCHETS=update is refused because CI is set');
+})->with(['true', '1', 'yes']);
+
+it('allows PEST_RATCHETS=update where CI is unset or false, and prune on CI', function (): void {
+    putenv('PEST_RATCHETS=update');
+    putenv('CI=false');
+    expect(Plugin::mode())->toBe(Mode::Update);
+
+    putenv('CI=0');
+    expect(Plugin::mode())->toBe(Mode::Update);
+
+    putenv('CI=true');
+    putenv('PEST_RATCHETS=prune');
+    expect(Plugin::mode())->toBe(Mode::Prune);
+});
+
+it('still takes --update-ratchets on CI, where it is asked for by name', function (): void {
+    putenv('CI=true');
+    (new Plugin)->handleArguments(['pest', '--update-ratchets']);
+
+    expect(Plugin::mode())->toBe(Mode::Update);
+});
