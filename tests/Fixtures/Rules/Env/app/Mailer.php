@@ -31,4 +31,9 @@ final class Mailer
 
         return $text . $doc . "env('IN_DOUBLE_QUOTES')";
     }
+
+    public function required(): string
+    {
+        return Env::getOrFail('MAIL_SECRET');
+    }
 }

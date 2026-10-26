@@ -12,10 +12,11 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\StaticCall;
 
 /**
- * Flags env() and Illuminate\Support\Env::get() outside the config
- * directory. Once `php artisan config:cache` has run, Laravel stops loading
- * .env, and those calls quietly return their default (often null) in
- * production. Application code should read config() instead.
+ * Flags env(), Illuminate\Support\Env::get() and Env::getOrFail() outside
+ * the config directory. Once `php artisan config:cache` has run, Laravel
+ * stops loading .env, and those calls quietly return their default (often
+ * null) in production, or throw for getOrFail(). Application code should
+ * read config() instead.
  */
 final readonly class NoDirectEnvCalls implements Rule
 {
@@ -40,9 +41,15 @@ final readonly class NoDirectEnvCalls implements Rule
         }
 
         foreach ($file->findInstanceOf(StaticCall::class) as $call) {
-            if (Calls::isStaticCallOn($call, ['Illuminate\Support\Env']) && Calls::nameIn(Calls::methodName($call), ['get', 'getOrFail'])) {
-                $offenses[] = new Offense($call->getStartLine(), "Env::get() called outside {$where}; read the value through config() instead");
+            $method = Calls::methodName($call);
+
+            if (! Calls::isStaticCallOn($call, ['Illuminate\Support\Env']) || ! Calls::nameIn($method, ['get', 'getOrFail'])) {
+                continue;
             }
+
+            // Named as declared, whatever case the call used, so the message stays stable.
+            $method = strcasecmp((string) $method, 'getOrFail') === 0 ? 'getOrFail' : 'get';
+            $offenses[] = new Offense($call->getStartLine(), "Env::{$method}() called outside {$where}; read the value through config() instead");
         }
 
         return $offenses;

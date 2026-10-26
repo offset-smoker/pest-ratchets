@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use OffsetSmoker\PestRatchets\Rules\NoDirectEnvCalls;
 
-it('flags env() and Env::get() outside config/, and nothing in comments, strings or the config directory', function (): void {
+it('flags env(), Env::get() and Env::getOrFail() outside config/, and nothing in comments, strings or the config directory', function (): void {
     expect(offendersIn(NoDirectEnvCalls::class, fixturePath('Rules/Env')))->toBe([
         'app/Mailer.php:11 env() called outside config/; read the value through config() instead',
         'app/Mailer.php:16 Env::get() called outside config/; read the value through config() instead',
         'app/Mailer.php:16 env() called outside config/; read the value through config() instead',
+        'app/Mailer.php:37 Env::getOrFail() called outside config/; read the value through config() instead',
     ]);
 });
 
@@ -27,6 +28,7 @@ it('takes other allowed paths', function (): void {
         'app/Mailer.php:11 env() called outside bootstrap/; read the value through config() instead',
         'app/Mailer.php:16 Env::get() called outside bootstrap/; read the value through config() instead',
         'app/Mailer.php:16 env() called outside bootstrap/; read the value through config() instead',
+        'app/Mailer.php:37 Env::getOrFail() called outside bootstrap/; read the value through config() instead',
         'config/services.php:4 env() called outside bootstrap/; read the value through config() instead',
     ]);
 });
