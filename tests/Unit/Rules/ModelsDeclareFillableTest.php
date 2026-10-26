@@ -34,3 +34,20 @@ it('names anonymous models', function (): void {
         'Anonymous.php:4 An anonymous model class sets $guarded = [], which leaves every attribute mass assignable; declare $fillable instead',
     ]);
 });
+
+it('accepts the stock Laravel 13 User model, which declares #[Fillable]', function (): void {
+    expect(offendersIn(ModelsDeclareFillable::class, fixturePath('Rules/ModelAttributes'), 'User.php'))->toBe([]);
+});
+
+it('reads Eloquent\'s #[Fillable], #[Guarded] and #[Unguarded] attributes', function (): void {
+    expect(offendersIn(ModelsDeclareFillable::class, fixturePath('Rules/ModelAttributes'), 'Attributes.php'))->toBe([
+        'Attributes.php:16 App\Models\Draft does not declare $fillable',
+        'Attributes.php:16 App\Models\Draft is marked #[Unguarded], which leaves every attribute mass assignable; declare $fillable instead',
+        'Attributes.php:21 App\Models\Setting is marked #[Unguarded], which leaves every attribute mass assignable; declare $fillable instead',
+        'Attributes.php:26 App\Models\Upload does not declare $fillable',
+        'Attributes.php:26 App\Models\Upload sets #[Guarded([])], which leaves every attribute mass assignable; declare $fillable instead',
+        'Attributes.php:31 App\Models\OpenBase sets #[Guarded([])], which leaves every attribute mass assignable; declare $fillable instead',
+        'Attributes.php:42 App\Models\Invoice does not declare $fillable',
+        'Attributes.php:47 App\Models\Lookalike does not declare $fillable',
+    ]);
+});

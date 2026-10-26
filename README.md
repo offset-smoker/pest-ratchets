@@ -141,7 +141,7 @@ what the rule found.
 | `NoDirectEnvCalls` | `env()` and `Illuminate\Support\Env::get()` outside `config/`. After `config:cache`, Laravel no longer loads `.env`, and these calls return their default. | `new NoDirectEnvCalls(allowedPaths: ['config', 'bootstrap/app.php'])` |
 | `NoDebugCalls` | The `dd()`, `dump()` and `ray()` functions, and the `->dd()`, `->dump()`, `->ddRawSql()`, `->dumpRawSql()` and `->ray()` methods on any object. | `new NoDebugCalls(functions: [...], methods: [...])`; `methods: []` checks functions only |
 | `NoInterpolatedRawSql` | Raw SQL whose SQL argument is an interpolated string (`"id = $id"`), a concatenation with anything other than literals and constants, or a `sprintf()` of non-literal values. Checks `DB::raw()`, `DB::select()`, `DB::selectOne()`, `DB::scalar()`, `DB::cursor()`, `DB::statement()`, `DB::unprepared()`, `DB::insert()`, `DB::update()`, `DB::delete()` and `DB::affectingStatement()`, and `whereRaw()`, `orWhereRaw()`, `havingRaw()`, `orHavingRaw()`, `selectRaw()`, `orderByRaw()`, `groupByRaw()`, `fromRaw()` and `updateFrom()` called on a builder or statically on a model. | `new NoInterpolatedRawSql(facades: ['Illuminate\Support\Facades\DB', 'DB', 'App\Support\Db'])` |
-| `ModelsDeclareFillable` | Concrete models with no `$fillable` property, and any model, abstract ones included, that sets `$guarded = []`. | `new ModelsDeclareFillable(modelClasses: [...])`: the base classes whose direct subclasses count as models. The default is Eloquent's `Model`, `Pivot`, `MorphPivot` and `Illuminate\Foundation\Auth\User`; add your own base model. |
+| `ModelsDeclareFillable` | Concrete models that declare neither a `$fillable` property nor Eloquent's `#[Fillable]` attribute, and any model, abstract ones included, that sets `$guarded = []`, `#[Guarded([])]` or `#[Unguarded]`. | `new ModelsDeclareFillable(modelClasses: [...])`: the base classes whose direct subclasses count as models. The default is Eloquent's `Model`, `Pivot`, `MorphPivot` and `Illuminate\Foundation\Auth\User`; add your own base model. |
 
 Pass an instance to `ratchet()` to use options:
 `ratchet(new NoDebugCalls(methods: []))->in('app')`.
@@ -204,9 +204,10 @@ messages (which would mean regenerating baselines).
 - **Unqualified calls inside a namespace** (`env()` in `namespace App;`)
   are treated as the global function, as PHP resolves them unless that
   namespace defines its own function of that name.
-- **Property declarations only.** `ModelsDeclareFillable` looks for a
-  `$fillable` property and a `$guarded = []` default. It does not see
-  `$guarded` set in a constructor, or `Model::unguard()`.
+- **Declarations only.** `ModelsDeclareFillable` looks for a `$fillable`
+  property or `#[Fillable]`, and for `$guarded = []`, `#[Guarded([])]` and
+  `#[Unguarded]` on the class. It does not see `$guarded` or `$fillable`
+  set in a constructor or a `fillable()` call, or `Model::unguard()`.
 - **Counts, not lines.** The baseline counts each message per file. If
   you fix one offender and add another of the same kind in the same file,
   the ratchet cannot tell, and it passes.
