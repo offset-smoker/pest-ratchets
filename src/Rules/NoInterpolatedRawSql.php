@@ -14,10 +14,12 @@ use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\InterpolatedStringPart;
+use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\Float_;
 use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\InterpolatedString;
@@ -26,8 +28,9 @@ use PhpParser\Node\Scalar\String_;
 
 /**
  * Flags raw SQL built from variables: a DB::raw(), DB::select() (and the
- * other raw DB facade calls) or ->whereRaw()-style call whose SQL argument
- * is an interpolated string ("... {$id}"), a concatenation with anything
+ * other raw DB facade calls, also when sent through DB::connection()),
+ * ->whereRaw()-style call or new Expression() whose SQL argument is an
+ * interpolated string ("... {$id}"), a concatenation with anything
  * but literals and constants, or a sprintf() of non-literal values. Values
  * belong in ? bindings.
  *
@@ -36,11 +39,13 @@ use PhpParser\Node\Scalar\String_;
  */
 final readonly class NoInterpolatedRawSql implements Rule
 {
-    /** Static calls on the DB facade whose first argument is SQL. */
+    /** Static calls on the DB facade, and calls on DB::connection(), whose first argument is SQL. */
     private const array FACADE_METHODS = ['raw', 'select', 'selectOne', 'scalar', 'cursor', 'statement', 'unprepared', 'insert', 'update', 'delete', 'affectingStatement'];
 
     /** Query and Eloquent builder methods whose first argument is SQL, called on an instance or statically on a model. */
-    private const array RAW_METHODS = ['whereRaw', 'orWhereRaw', 'havingRaw', 'orHavingRaw', 'selectRaw', 'orderByRaw', 'groupByRaw', 'fromRaw', 'updateFrom'];
+    private const array RAW_METHODS = ['whereRaw', 'orWhereRaw', 'havingRaw', 'orHavingRaw', 'selectRaw', 'orderByRaw', 'groupByRaw', 'fromRaw'];
+
+    private const string EXPRESSION_CLASS = 'Illuminate\Database\Query\Expression';
 
     /** The names Laravel gives the SQL parameter of those methods. */
     private const array SQL_PARAMETERS = ['sql', 'expression', 'query', 'value'];
@@ -70,8 +75,20 @@ final readonly class NoInterpolatedRawSql implements Rule
         foreach ([...$file->findInstanceOf(MethodCall::class), ...$file->findInstanceOf(NullsafeMethodCall::class)] as $call) {
             $method = Calls::methodName($call);
 
-            if (Calls::nameIn($method, self::RAW_METHODS) && $this->sqlIsInterpolated($call)) {
+            if (! $this->sqlIsInterpolated($call)) {
+                continue;
+            }
+
+            if ($this->isOnConnection($call) && Calls::nameIn($method, self::FACADE_METHODS)) {
+                $offenses[] = $this->offense($call, "DB::connection()->{$method}()");
+            } elseif (Calls::nameIn($method, self::RAW_METHODS)) {
                 $offenses[] = $this->offense($call, "->{$method}()");
+            }
+        }
+
+        foreach ($file->findInstanceOf(New_::class) as $new) {
+            if ($new->class instanceof Name && strcasecmp($new->class->toString(), self::EXPRESSION_CLASS) === 0 && $this->sqlIsInterpolated($new)) {
+                $offenses[] = $this->offense($new, 'new Expression()');
             }
         }
 
@@ -83,7 +100,17 @@ final readonly class NoInterpolatedRawSql implements Rule
         return new Offense($call->getStartLine(), "{$label} SQL built from interpolated or concatenated values; pass them as ? bindings");
     }
 
-    private function sqlIsInterpolated(MethodCall|NullsafeMethodCall|StaticCall $call): bool
+    /**
+     * Whether a call is made directly on DB::connection(...).
+     */
+    private function isOnConnection(MethodCall|NullsafeMethodCall $call): bool
+    {
+        return $call->var instanceof StaticCall
+            && Calls::isStaticCallOn($call->var, $this->facades)
+            && Calls::nameIn(Calls::methodName($call->var), ['connection']);
+    }
+
+    private function sqlIsInterpolated(MethodCall|New_|NullsafeMethodCall|StaticCall $call): bool
     {
         $sql = Calls::argument($call, 0, self::SQL_PARAMETERS);
 

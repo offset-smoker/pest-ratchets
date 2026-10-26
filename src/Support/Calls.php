@@ -7,6 +7,7 @@ namespace OffsetSmoker\PestRatchets\Support;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
@@ -90,13 +91,13 @@ final class Calls
     }
 
     /**
-     * The argument passed for a parameter, by name or by position. Null when
-     * it is absent, unpacked (`...$args`) or the call is a first-class
-     * callable (`whereRaw(...)`).
+     * The argument passed for a parameter of a call or a `new`, by name or
+     * by position. Null when it is absent, unpacked (`...$args`) or the call
+     * is a first-class callable (`whereRaw(...)`).
      *
      * @param  list<string>  $names  the parameter's possible names
      */
-    public static function argument(FuncCall|MethodCall|NullsafeMethodCall|StaticCall $call, int $position, array $names): ?Expr
+    public static function argument(FuncCall|MethodCall|New_|NullsafeMethodCall|StaticCall $call, int $position, array $names): ?Expr
     {
         if ($call->isFirstClassCallable()) {
             return null;

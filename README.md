@@ -140,7 +140,7 @@ what the rule found.
 |---|---|---|
 | `NoDirectEnvCalls` | `env()` and `Illuminate\Support\Env::get()` outside `config/`. After `config:cache`, Laravel no longer loads `.env`, and these calls return their default. | `new NoDirectEnvCalls(allowedPaths: ['config', 'bootstrap/app.php'])` |
 | `NoDebugCalls` | The `dd()`, `dump()` and `ray()` functions, and the `->dd()`, `->dump()`, `->ddRawSql()`, `->dumpRawSql()` and `->ray()` methods on any object. | `new NoDebugCalls(functions: [...], methods: [...])`; `methods: []` checks functions only |
-| `NoInterpolatedRawSql` | Raw SQL whose SQL argument is an interpolated string (`"id = $id"`), a concatenation with anything other than literals and constants, or a `sprintf()` of non-literal values. Checks `DB::raw()`, `DB::select()`, `DB::selectOne()`, `DB::scalar()`, `DB::cursor()`, `DB::statement()`, `DB::unprepared()`, `DB::insert()`, `DB::update()`, `DB::delete()` and `DB::affectingStatement()`, and `whereRaw()`, `orWhereRaw()`, `havingRaw()`, `orHavingRaw()`, `selectRaw()`, `orderByRaw()`, `groupByRaw()`, `fromRaw()` and `updateFrom()` called on a builder or statically on a model. | `new NoInterpolatedRawSql(facades: ['Illuminate\Support\Facades\DB', 'DB', 'App\Support\Db'])` |
+| `NoInterpolatedRawSql` | Raw SQL whose SQL argument is an interpolated string (`"id = $id"`), a concatenation with anything other than literals and constants, or a `sprintf()` of non-literal values. Checks `DB::raw()`, `DB::select()`, `DB::selectOne()`, `DB::scalar()`, `DB::cursor()`, `DB::statement()`, `DB::unprepared()`, `DB::insert()`, `DB::update()`, `DB::delete()` and `DB::affectingStatement()`, the same methods called directly on `DB::connection(...)`, `new Illuminate\Database\Query\Expression(...)`, and `whereRaw()`, `orWhereRaw()`, `havingRaw()`, `orHavingRaw()`, `selectRaw()`, `orderByRaw()`, `groupByRaw()` and `fromRaw()` called on a builder or statically on a model. | `new NoInterpolatedRawSql(facades: ['Illuminate\Support\Facades\DB', 'DB', 'App\Support\Db'])` |
 | `ModelsDeclareFillable` | Concrete models that declare neither a `$fillable` property nor Eloquent's `#[Fillable]` attribute, and any model, abstract ones included, that sets `$guarded = []`, `#[Guarded([])]` or `#[Unguarded]`. | `new ModelsDeclareFillable(modelClasses: [...])`: the base classes whose direct subclasses count as models. The default is Eloquent's `Model`, `Pivot`, `MorphPivot` and `Illuminate\Foundation\Auth\User`; add your own base model. |
 
 Pass an instance to `ratchet()` to use options:
@@ -198,7 +198,10 @@ messages (which would mean regenerating baselines).
 - **What counts as interpolated SQL.** `NoInterpolatedRawSql` judges the
   SQL expression it can see. `whereRaw($sql)` with a variable built
   elsewhere is not flagged, and neither are SQL strings built by helpers
-  other than `sprintf()` and `vsprintf()`.
+  other than `sprintf()` and `vsprintf()`. A connection is only recognised
+  as the call's direct receiver: `DB::connection()->select(...)` is
+  checked, but `$db = DB::connection(); $db->select(...)` and a connection
+  injected into a constructor are not.
 - **Dynamic calls are not seen.** `$fn = 'env'; $fn('X')`,
   `call_user_func('dd', $x)` and the like pass every rule.
 - **Unqualified calls inside a namespace** (`env()` in `namespace App;`)

@@ -111,7 +111,7 @@ rules share:
 | `methodName(MethodCall\|NullsafeMethodCall\|StaticCall)` | the method name as written, or null when it is dynamic |
 | `staticClass(StaticCall)` | the fully qualified class of `Foo::bar()`, or null for `static::`, `self::`, `parent::` and `$class::` |
 | `isStaticCallOn(StaticCall, list<string>)` | whether the call is on one of those classes, compared without case |
-| `argument(call, position, names)` | the expression passed for a parameter by position or by name, or null when absent, unpacked or a first-class callable |
+| `argument(call, position, names)` | the expression passed for a parameter of a call or a `new`, by position or by name, or null when absent, unpacked or a first-class callable |
 | `nameIn(?string, list<string>)` | a case-insensitive `in_array()` that accepts null |
 
 ## Testing a rule

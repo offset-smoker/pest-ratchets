@@ -32,3 +32,16 @@ it('only treats the configured classes as the DB facade', function (): void {
         'NotTheFacade.php:9 DB::select() SQL built from interpolated or concatenated values; pass them as ? bindings',
     ]);
 });
+
+it('flags raw SQL sent through DB::connection() and built into a new Expression', function (): void {
+    $message = 'SQL built from interpolated or concatenated values; pass them as ? bindings';
+
+    expect(offendersIn(NoInterpolatedRawSql::class, fixturePath('Rules/RawSql'), 'Connections.php'))->toBe([
+        "Connections.php:12 DB::connection()->select() {$message}",
+        "Connections.php:13 DB::connection()->statement() {$message}",
+        "Connections.php:14 DB::connection()->unprepared() {$message}",
+        "Connections.php:15 DB::connection()->raw() {$message}",
+        "Connections.php:16 new Expression() {$message}",
+        "Connections.php:17 new Expression() {$message}",
+    ]);
+});
