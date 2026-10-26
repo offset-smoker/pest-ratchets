@@ -18,4 +18,7 @@ ratchet(NoDirectEnvCalls::class)
 ratchet(new NoDebugCalls, 'this package leaves no debug calls')->in('src')->group('dogfood');
 ratchet(NoDirectEnvCalls::class, 'this package never calls env()')->in('src')->group('dogfood');
 ratchet(NoInterpolatedRawSql::class, 'this package builds no raw SQL')->in('src')->group('dogfood');
+
+// The package holds no Eloquent models today, so this one only guards
+// against a model added later (a test fixture outside tests/Fixtures, say).
 ratchet(ModelsDeclareFillable::class, 'this package has no unguarded models')->in('src', 'tests')->exclude('tests/Fixtures')->group('dogfood');
